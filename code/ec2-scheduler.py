@@ -90,9 +90,11 @@ def lambda_handler(event, context):
             ec2 = boto3.resource('ec2', region_name=region['RegionName'])
 
             awsregion = region['RegionName']
-            now = datetime.datetime.now().strftime("%H%M")
-            nowMax = datetime.datetime.now() - datetime.timedelta(minutes=59)
-            nowMax = nowMax.strftime("%H%M")
+            today = datetime.datetime.today().strftime("%Y-%m-%d")
+            today = datetime.datetime.strptime(today, '%Y-%m-%d')
+            now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            nowMax = datetime.datetime.now() - datetime.timedelta(minutes=10)
+            nowMax = nowMax.strftime("%Y-%m-%d %H:%M:%S")
             nowDay = datetime.datetime.today().strftime("%a").lower()
 
             # Declare Lists
@@ -159,8 +161,15 @@ def lambda_handler(event, context):
                                     if d.lower() == nowDay:
                                         isActiveDay = True
 
+                            startTime = str(startTime)
+                            stopTime = str(stopTime)
+                            startTime = today + datetime.timedelta(
+                                hours=int(startTime[:2]), minutes=int(startTime[-2:]))
+                            stopTime = today + datetime.timedelta(
+                                hours=int(stopTime[:2]), minutes=int(stopTime[-2:]))
+                            
                             # Append to start list
-                            if startTime >= str(nowMax) and startTime <= str(now) and \
+                            if str(startTime) >= str(nowMax) and str(startTime) <= str(now) and \
                                     isActiveDay == True and state == "stopped":
                                 startList.append(i.instance_id)
                                 print i.instance_id, " added to START list"
@@ -168,7 +177,7 @@ def lambda_handler(event, context):
                                     putCloudWatchMetric(region['RegionName'], i.instance_id, 1)
 
                             # Append to stop list
-                            if stopTime >= str(nowMax) and stopTime <= str(now) and \
+                            if srt(stopTime) >= str(nowMax) and str(stopTime) <= str(now) and \
                                     isActiveDay == True and state == "running":
                                 stopList.append(i.instance_id)
                                 print i.instance_id, " added to STOP list"
